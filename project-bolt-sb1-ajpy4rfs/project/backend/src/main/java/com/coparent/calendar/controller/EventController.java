@@ -40,8 +40,8 @@ public class EventController {
 	public ResponseEntity<EventDTO> createEvent(@RequestBody EventDTO eventDTO,
 			@AuthenticationPrincipal UserDetails userDetails) {
 		System.out.println(eventDTO);
-//		return ResponseEntity.ok(eventService.createEvent(eventDTO, userDetails.getUsername()));
-		return ResponseEntity.ok(eventService.createEvent(eventDTO, eventDTO.getCreatedBy()));
+//		return ResponseEntity.ok(eventService.createEvent(eventDTO, userDetails.getUsername())); 
+		return ResponseEntity.ok(eventService.createEvent(eventDTO, userDetails.getUsername()));
 	}
 
 	@PutMapping("/{eventId}")

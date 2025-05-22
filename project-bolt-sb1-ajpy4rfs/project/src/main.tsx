@@ -8,8 +8,21 @@ import './index.css';
 // import '@fullcalendar/interaction/main.css';
 
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
+// createRoot(document.getElementById('root')!).render(
+//   <StrictMode>
+//     <App />
+//   </StrictMode>
+// );
+
+
+import React from 'react';
+import ReactDOM from 'react-dom/client'; 
+import UserSyncWrapper from './components/UserSyncWrapper.tsx';
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <UserSyncWrapper>
+      <App />
+    </UserSyncWrapper>
+  </React.StrictMode>
 );

@@ -4,51 +4,56 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { X, Calendar, Clock, Repeat, Users, AlertTriangle } from 'lucide-react';
 import { useCalendarStore } from '../../store/useCalendarStore';
+import { useUserStore } from '../../store/useUserStore';
 import { mockUsers, currentUser } from '../../mocks/data';
-import { CalendarEvent, EventType, RecurrenceType } from '../../types';
+import { CalendarEvent, EventType } from '../../types';
 import { format, parseISO, isAfter } from 'date-fns';
+import CoParentSetupModal from '../profile/CoParentSetupModal';
+import ChildrenSetupModal from '../profile/ChildrenSetupModal';
 
-// Form validation schema
 const eventSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
   start: z.string(),
   end: z.string(),
   allDay: z.boolean(),
-  eventType: z.enum(['VACATION', 'MEDICAL', 'SCHOOL_EVENT', 'EXCHANGE', 'OTHER'] as const),
+  eventType: z.enum(['VACATION', 'MEDICAL', 'SCHOOL_EVENT', 'EXCHANGE', 'OTHER']),
   sharedWith: z.array(z.string()),
-  recurrenceType: z.enum(['NONE', 'DAILY', 'WEEKLY', 'MONTHLY'] as const),
-  recurrenceEndType: z.enum(['never', 'until', 'count'] as const),
+  childrenIds: z.array(z.string()).optional(),
+  recurrenceType: z.enum(['NONE', 'DAILY', 'WEEKLY', 'MONTHLY']),
+  recurrenceEndType: z.enum(['never', 'until', 'count']),
   recurrenceUntil: z.string().optional(),
-  recurrenceCount: z.number().optional()
-}).refine(data => {
-  // Validate end date is after start date
-  return isAfter(parseISO(data.end), parseISO(data.start));
-}, {
+  recurrenceCount: z.number().optional(),
+}).refine(data => isAfter(parseISO(data.end), parseISO(data.start)), {
   message: 'End time must be after start time',
   path: ['end']
 });
 
 type EventFormData = z.infer<typeof eventSchema>;
 
+
 export default function EventModal() {
-  const { 
+  const [showCoParentModal, setShowCoParentModal] = useState(false);
+  const [showChildrenModal, setShowChildrenModal] = useState(false);
+  const [conflicts, setConflicts] = useState<CalendarEvent[]>([]);
+  const [showConflicts, setShowConflicts] = useState(false);
+
+  const { coParent, children } = useUserStore();
+  const {
     selectedEvent,
     closeEventModal,
     addEvent,
     updateEvent,
     deleteEvent,
-    checkConflicts
+    checkConflicts,
+    canCreateEvent
   } = useCalendarStore();
-  
-  const [conflicts, setConflicts] = useState<CalendarEvent[]>([]);
-  const [showConflicts, setShowConflicts] = useState(false);
+
+  const isEditMode = !!selectedEvent?.id;
   const isPastEvent = new Date(selectedEvent?.start || '') < new Date();
-  
-  const isEditMode = selectedEvent && selectedEvent.id;
-  
-  // Set up form with default values
-  const { control, handleSubmit, watch, formState: { errors }, setValue, reset } = useForm<EventFormData>({
+
+  // ✅ Set up form before any hook that uses it
+  const { control, handleSubmit, watch, formState: { errors }, setValue, reset, register } = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
     defaultValues: {
       title: selectedEvent?.title || '',
@@ -58,35 +63,133 @@ export default function EventModal() {
       allDay: selectedEvent?.allDay || false,
       eventType: (selectedEvent?.eventType as EventType) || 'OTHER',
       sharedWith: selectedEvent?.sharedWith || [],
+      childrenIds: selectedEvent?.childrenIds || [],
       recurrenceType: selectedEvent?.recurrence?.type || 'NONE',
-      recurrenceEndType: selectedEvent?.recurrence?.end.type || 'never',
-      recurrenceUntil: selectedEvent?.recurrence?.end.type === 'until' 
-        ? selectedEvent.recurrence.end.until 
+      recurrenceEndType: selectedEvent?.recurrence?.end?.type || 'never',
+      recurrenceUntil: selectedEvent?.recurrence?.end?.type === 'until'
+        ? selectedEvent.recurrence.end.until
         : undefined,
-      recurrenceCount: selectedEvent?.recurrence?.end.type === 'count'
+      recurrenceCount: selectedEvent?.recurrence?.end?.type === 'count'
         ? selectedEvent.recurrence.end.count
         : undefined
     }
   });
   
-  // Watch form values to check for conflicts
+  useEffect(() => {
+    reset(getDefaultValues(selectedEvent));
+  }, [selectedEvent]);
+
+  function toLocalDateTimeString(date: Date): string {
+    const offset = date.getTimezoneOffset();
+    const localDate = new Date(date.getTime() - offset * 60 * 1000);
+    return localDate.toISOString().slice(0, 16); // Correct for datetime-local
+  }
+
+  function getDefaultValues(event?: CalendarEvent): EventFormData {
+    const now = new Date();
+    const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+
+    return {
+      title: event?.title || '',
+      description: event?.description || '',
+      start: event?.start
+        ? toLocalDateTimeString(new Date(event.start))
+        : toLocalDateTimeString(now),
+      end: event?.end
+        ? toLocalDateTimeString(new Date(event.end))
+        : toLocalDateTimeString(oneHourLater),
+      allDay: event?.allDay || false,
+      eventType: (event?.eventType as EventType) || 'OTHER',
+      sharedWith: event?.sharedWith || [],
+      childrenIds: event?.childrenIds || [],
+      recurrenceType: event?.recurrence?.type || 'NONE',
+      recurrenceEndType: event?.recurrence?.end?.type || 'never',
+      recurrenceUntil: event?.recurrence?.end?.until?.slice(0, 10),
+      recurrenceCount: event?.recurrence?.end?.count,
+    };
+  }
+
+
+
+
   const startDate = watch('start');
   const endDate = watch('end');
-  
-  // Check for conflicts when dates change
+
   useEffect(() => {
     const start = parseISO(startDate);
     const end = parseISO(endDate);
-    
-    // Only check if we have valid dates
+
     if (isAfter(end, start)) {
-      const conflictEvents = checkConflicts(start, end, isEditMode ? selectedEvent?.id : undefined);
-      setConflicts(conflictEvents);
-      setShowConflicts(conflictEvents.length > 0);
+      (async () => {
+        const foundConflicts = await checkConflicts(start, end, isEditMode ? selectedEvent?.id : undefined);
+        setConflicts(foundConflicts);
+        setShowConflicts(foundConflicts.length > 0);
+      })();
     }
   }, [startDate, endDate, isEditMode, selectedEvent, checkConflicts]);
-  
-  // Handle form submission
+
+
+  const shouldShowSetupScreen = !canCreateEvent() && !showCoParentModal && !showChildrenModal;
+
+  // ✅ New Setup Modal Logic (place this before the main `return`)
+  if (!canCreateEvent()) {
+    // If setup modals are open, render them first
+    if (showCoParentModal) {
+      return <CoParentSetupModal onClose={() => setShowCoParentModal(false)} />;
+    }
+
+    if (showChildrenModal) {
+      return <ChildrenSetupModal onClose={() => setShowChildrenModal(false)} />;
+    }
+
+    // If setup is incomplete, show modal with one or both buttons
+    return (
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        onClick={() => closeEventModal()}
+      >
+        <div
+          className="bg-white rounded-lg p-6 max-w-md w-full relative"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={closeEventModal}
+            className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-200 transition"
+            aria-label="Close"
+          >
+            <X size={20} className="text-gray-500" />
+          </button>
+
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Setup Required</h3>
+          <p className="text-gray-500 mb-4">
+            You need to add your co-parent and children before creating an event.
+          </p>
+          <div className="space-y-4">
+            {!coParent && (
+              <button
+                onClick={() => setShowCoParentModal(true)}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Add Co-Parent
+              </button>
+            )}
+            {Array.isArray(children) && children.length === 0 && (
+              <button
+                onClick={() => setShowChildrenModal(true)}
+                className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              >
+                Add Children
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+    );
+  }
+
+
+  // ✅ Handle form submit
   const onSubmit = (data: EventFormData) => {
     const eventData: Omit<CalendarEvent, 'id'> = {
       title: data.title,
@@ -107,29 +210,25 @@ export default function EventModal() {
         }
       } : undefined
     };
-    
+
     if (isEditMode && selectedEvent) {
       updateEvent(selectedEvent.id, eventData);
     } else {
       addEvent(eventData);
     }
-    
+
     closeEventModal();
   };
-  
-  // Handle event deletion
+
   const handleDelete = () => {
     if (isEditMode && selectedEvent) {
       deleteEvent(selectedEvent.id);
       closeEventModal();
     }
   };
-  
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    return format(parseISO(dateString), 'MMM d, yyyy h:mm a');
-  };
-  
+
+  const formatDate = (dateString: string) => format(parseISO(dateString), 'MMM d, yyyy h:mm a');
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
@@ -138,16 +237,17 @@ export default function EventModal() {
           <h2 className="text-xl font-semibold">
             {isEditMode ? 'Edit Event' : 'Create New Event'}
           </h2>
-          <button 
+          <button
             onClick={closeEventModal}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
           >
             <X size={20} />
           </button>
         </div>
-        
+
         {/* Form */}
-        <form onSubmit={handleSubmit(onSubmit)} className="overflow-y-auto p-4">
+      <form key={selectedEvent?.id || 'new'} onSubmit={handleSubmit(onSubmit)} className="overflow-y-auto p-4">
+
           {/* Conflict Warning */}
           {showConflicts && (
             <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md flex items-start">
@@ -168,7 +268,7 @@ export default function EventModal() {
               </div>
             </div>
           )}
-          
+
           {/* Title */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -181,9 +281,8 @@ export default function EventModal() {
                 <input
                   {...field}
                   type="text"
-                  className={`w-full px-3 py-2 border ${
-                    errors.title ? 'border-red-500' : 'border-gray-300'
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  className={`w-full px-3 py-2 border ${errors.title ? 'border-red-500' : 'border-gray-300'
+                    } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   placeholder="Enter event title"
                 />
               )}
@@ -192,7 +291,7 @@ export default function EventModal() {
               <p className="mt-1 text-sm text-red-500">{errors.title.message}</p>
             )}
           </div>
-          
+
           {/* Description */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -211,7 +310,7 @@ export default function EventModal() {
               )}
             />
           </div>
-          
+
           {/* Date & Time */}
           <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -228,11 +327,11 @@ export default function EventModal() {
                       type="datetime-local"
                       value={field.value.slice(0, 16)} // Format for datetime-local
                       onChange={(e) => {
-                        field.onChange(new Date(e.target.value).toISOString());
+                        field.onChange(toLocalDateTimeString(new Date(e.target.value)));
+
                       }}
-                      className={`w-full px-3 py-2 border ${
-                        errors.start ? 'border-red-500' : 'border-gray-300'
-                      } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      className={`w-full px-3 py-2 border ${errors.start ? 'border-red-500' : 'border-gray-300'
+                        } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     />
                   )}
                 />
@@ -241,7 +340,7 @@ export default function EventModal() {
                 <p className="mt-1 text-sm text-red-500">{errors.start.message}</p>
               )}
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 End Date & Time*
@@ -256,11 +355,11 @@ export default function EventModal() {
                       type="datetime-local"
                       value={field.value.slice(0, 16)} // Format for datetime-local
                       onChange={(e) => {
-                        field.onChange(new Date(e.target.value).toISOString());
+                        field.onChange(toLocalDateTimeString(new Date(e.target.value)));
                       }}
-                      className={`w-full px-3 py-2 border ${
-                        errors.end ? 'border-red-500' : 'border-gray-300'
-                      } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+
+                      className={`w-full px-3 py-2 border ${errors.end ? 'border-red-500' : 'border-gray-300'
+                        } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     />
                   )}
                 />
@@ -270,7 +369,7 @@ export default function EventModal() {
               )}
             </div>
           </div>
-          
+
           {/* All Day Toggle */}
           <div className="mb-4">
             <label className="flex items-center cursor-pointer">
@@ -289,7 +388,7 @@ export default function EventModal() {
               <span className="ml-2 text-sm text-gray-700">All day event</span>
             </label>
           </div>
-          
+
           {/* Event Type */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -303,37 +402,59 @@ export default function EventModal() {
                   {...field}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="Vacation">Vacation</option>
-                  <option value="Medical">Medical</option>
-                  <option value="School">School</option>
-                  <option value="Exchange">Exchange</option>
-                  <option value="Other">Other</option>
+                  <option value="VACATION">Vacation</option>
+                  <option value="MEDICAL">Medical</option>
+                  <option value="SCHOOL_EVENT">School</option>
+                  <option value="EXCHANGE">Exchange</option>
+                  <option value="OTHER">Other</option>
                 </select>
               )}
             />
           </div>
-          
+
+          {/* Children */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Children
+            </label>
+            <div className="mt-2 space-y-2">
+              {children.map(child => (
+                <label key={child.id} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    {...register('childrenIds')}
+                    value={child.id}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="ml-2 text-gray-700">{child.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Shared With */}
           {/* Shared With */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
               <Users size={18} className="mr-1" />
               Share with
             </label>
+
             <div className="space-y-2">
-              {mockUsers.filter(u => u.id !== currentUser.id).map(user => (
-                <label key={user.id} className="flex items-center space-x-2">
+              {coParent && coParent.id !== currentUser.id && (
+                <label className="flex items-center space-x-2">
                   <Controller
                     name="sharedWith"
                     control={control}
                     render={({ field }) => (
                       <input
                         type="checkbox"
-                        checked={field.value.includes(user.id)}
+                        checked={field.value.includes(coParent.id)}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            field.onChange([...field.value, user.id]);
+                            field.onChange([...field.value, coParent.id]);
                           } else {
-                            field.onChange(field.value.filter(id => id !== user.id));
+                            field.onChange(field.value.filter(id => id !== coParent.id));
                           }
                         }}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
@@ -341,17 +462,16 @@ export default function EventModal() {
                     )}
                   />
                   <div className="flex items-center">
-                    <span 
-                      className="w-3 h-3 rounded-full mr-2" 
-                      style={{ backgroundColor: user.color }}
-                    ></span>
-                    <span>{user.name}</span>
+                    <span className="w-3 h-3 rounded-full mr-2 bg-purple-500"></span>
+                    <span>{coParent.name}</span>
                   </div>
                 </label>
-              ))}
+              )}
+
             </div>
           </div>
-          
+
+
           {/* Recurrence */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
@@ -373,7 +493,7 @@ export default function EventModal() {
                 </select>
               )}
             />
-            
+
             {watch('recurrenceType') !== 'NONE' && (
               <div className="bg-gray-50 p-3 rounded-md">
                 <div className="mb-2">
@@ -395,7 +515,7 @@ export default function EventModal() {
                     )}
                   />
                 </div>
-                
+
                 {watch('recurrenceEndType') === 'until' && (
                   <div>
                     <Controller
@@ -415,7 +535,7 @@ export default function EventModal() {
                     />
                   </div>
                 )}
-                
+
                 {watch('recurrenceEndType') === 'count' && (
                   <div>
                     <Controller
@@ -438,25 +558,25 @@ export default function EventModal() {
             )}
           </div>
         </form>
-        
+
         {/* Footer */}
-<div className="p-4 border-t border-gray-200 flex justify-between">
-  {isEditMode ? (
-    isPastEvent ? (
-      <div /> // past event: show nothing or static label
-    ) : (
-      <button
-        type="button"
-        onClick={handleDelete}
-        className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
-      >
-        Delete Event
-      </button>
-    )
-  ) : (
-    <div /> // not edit mode: show nothing
-  )}
-          
+        <div className="p-4 border-t border-gray-200 flex justify-between">
+          {isEditMode ? (
+            isPastEvent ? (
+              <div /> // past event: show nothing or static label
+            ) : (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
+              >
+                Delete Event
+              </button>
+            )
+          ) : (
+            <div /> // not edit mode: show nothing
+          )}
+
           <div className="flex space-x-2">
             <button
               type="button"
@@ -475,6 +595,13 @@ export default function EventModal() {
           </div>
         </div>
       </div>
+      {showCoParentModal && (
+        <CoParentSetupModal onClose={() => setShowCoParentModal(false)} />
+      )}
+
+      {showChildrenModal && (
+        <ChildrenSetupModal onClose={() => setShowChildrenModal(false)} />
+      )}
     </div>
   );
 }

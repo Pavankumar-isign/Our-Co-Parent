@@ -1,11 +1,7 @@
 
 package com.coparent.calendar.entity;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
@@ -17,21 +13,18 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
 @Data
 @NoArgsConstructor
 @Entity
-@Table(name = "children")
-@ToString(exclude = "user") // Break circular toString
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class Child {
+@Table(name = "co_parents")
+public class CoParent {
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private String id;
@@ -39,31 +32,27 @@ public class Child {
 	@Column(nullable = false)
 	private String name;
 
-	@Column(nullable = false)
-	private LocalDate dateOfBirth;
+	@Column(nullable = false, unique = true)
+	private String email;
+
+	private String phone;
 
 	@Column(nullable = false)
-	private String gender;
+	private String relationship;
 
-	@Column(columnDefinition = "TEXT")
-	private String notes;
-
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "parent_id", nullable = false)
-	@JsonBackReference
-	private User parent;
+	@OneToOne
+	@JoinColumn(name = "user_id", nullable = false)
+	private User user;
 
 	@Column(nullable = false)
-	@CreatedDate
 	private LocalDateTime createdAt;
 
 	@Column(nullable = false)
-	@LastModifiedDate
 	private LocalDateTime updatedAt;
-
-//	@ManyToOne(fetch = FetchType.LAZY)
-//	@JoinColumn(name = "family_id")
-//	private Family family;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "linked_by", nullable = false)
+	@JsonBackReference(value = "user-coParent")
+	private User linkedBy; // This is the parent who added this co-parent
 
 	@PrePersist
 	protected void onCreate() {

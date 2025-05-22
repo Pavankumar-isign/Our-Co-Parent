@@ -1,16 +1,23 @@
 package com.coparent.calendar.entity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -20,13 +27,17 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Entity
+@ToString(exclude = "coParent") // Break circular toString
+@EqualsAndHashCode(onlyExplicitlyIncluded = true) // Avoid full object equality
 @Table(name = "users")
 public class User {
 
@@ -45,8 +56,8 @@ public class User {
 	@Column(nullable = false, unique = true)
 	private String email;
 
-	@NotBlank
-	@Column(nullable = false)
+//	@NotBlank
+//	@Column(nullable = false)
 	private String password;
 
 	@Enumerated(EnumType.STRING)
@@ -79,6 +90,13 @@ public class User {
 	@ManyToOne
 	@JoinColumn(name = "family_id") // Foreign key column
 	private Family family;
+
+	@OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	@JsonManagedReference(value = "user-coParent")
+	private CoParent coParent;
+	@OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	@JsonManagedReference
+	private List<Child> children;
 
 	// Auto-populate timestamps
 	@PrePersist

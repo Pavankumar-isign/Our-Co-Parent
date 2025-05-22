@@ -28,8 +28,8 @@ public class Family {
 	@Column(nullable = false)
 	private String familyName;
 
-	@OneToMany(mappedBy = "family", cascade = CascadeType.ALL, orphanRemoval = true)
-	private Set<Child> children;
+//	@OneToMany(mappedBy = "family", cascade = CascadeType.ALL, orphanRemoval = true)
+//	private Set<Child> children;
 
 	@OneToMany(mappedBy = "family", cascade = CascadeType.ALL, orphanRemoval = true)
 	private Set<User> users;
