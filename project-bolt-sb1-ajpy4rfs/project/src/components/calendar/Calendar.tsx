@@ -1,5 +1,5 @@
-// import { useRef, useEffect, useState } from 'react'; 
-// import type { CalendarApi } from '@fullcalendar/core'; 
+// import { useRef, useEffect, useState } from 'react';
+// import type { CalendarApi } from '@fullcalendar/core';
 // import FullCalendar from '@fullcalendar/react';
 // import dayGridPlugin from '@fullcalendar/daygrid';
 // import timeGridPlugin from '@fullcalendar/timegrid';
@@ -12,13 +12,12 @@
 // import { CalendarEvent } from '../../types';
 // import { parseISO } from 'date-fns';
 
-
 // export default function Calendar() {
-//   const { 
-//     events, 
-//     view, 
+//   const {
+//     events,
+//     view,
 //     date,
-//     setView, 
+//     setView,
 //     setDate,
 //     filters,
 //     isEventModalOpen,
@@ -27,30 +26,29 @@
 //     selectedEvent,
 //     updateEvent
 //   } = useCalendarStore();
-  
+
 //   const [filteredEvents, setFilteredEvents] = useState<CalendarEvent[]>(events);
 //   const calendarRef = useRef<FullCalendar | null>(null);
 
-  
 //   // Apply filters to events
 //   useEffect(() => {
 //     let filtered = [...events];
-    
+
 //     // Filter by event type
 //     if (filters.eventTypes.length > 0) {
-//       filtered = filtered.filter(event => 
+//       filtered = filtered.filter(event =>
 //         filters.eventTypes.includes(event.eventType)
 //       );
 //     }
-    
+
 //     // Filter by user
 //     if (filters.users.length > 0) {
-//       filtered = filtered.filter(event => 
-//         filters.users.includes(event.createdBy) || 
+//       filtered = filtered.filter(event =>
+//         filters.users.includes(event.createdBy) ||
 //         event.sharedWith.some(id => filters.users.includes(id))
 //       );
 //     }
-    
+
 //     setFilteredEvents(filtered);
 //   }, [events, filters]);
 //   useEffect(() => {
@@ -60,12 +58,11 @@
 //   }
 // }, [view]);
 
-  
 //   // Handle date click to create new event
 //   // const handleDateClick = (info: any) => {
 //   //   const end = new Date(info.date);
 //   //   end.setHours(end.getHours() + 1);
-    
+
 //   //   const newEvent: Partial<CalendarEvent> = {
 //   //     title: '',
 //   //     start: info.date.toISOString(),
@@ -76,10 +73,10 @@
 //   //     sharedWith: [],
 //   //     color: currentUser.color,
 //   //   };
-    
+
 //   //   openEventModal(newEvent as CalendarEvent);
 //   // };
-  
+
 // const handleDateClick = (info: any) => {
 //   const clickedDate = new Date(info.date);
 //   const now = new Date();
@@ -106,8 +103,6 @@
 //   openEventModal(newEvent as CalendarEvent);
 // };
 
-
-
 //   // Handle event click to edit
 //   // const handleEventClick = (info: any) => {
 //   //   const event = events.find(e => e.id === info.event.id);
@@ -131,27 +126,26 @@
 //   openEventModal(event);
 // };
 
-  
 //   // Handle event drop (drag & drop)
 //   const handleEventDrop = (info: any) => {
 //     const { event } = info;
-    
+
 //     updateEvent(event.id, {
 //       start: event.start.toISOString(),
 //       end: event.end ? event.end.toISOString() : event.start.toISOString(),
 //     });
 //   };
-  
+
 //   // Handle event resize
 //   const handleEventResize = (info: any) => {
 //     const { event } = info;
-    
+
 //     updateEvent(event.id, {
 //       start: event.start.toISOString(),
 //       end: event.end.toISOString(),
 //     });
 //   };
-  
+
 //   // Format events for FullCalendar
 //   const formattedEvents = filteredEvents.map(event => ({
 //     id: event.id,
@@ -169,11 +163,11 @@
 //       sharedWith: event.sharedWith,
 //     }
 //   }));
-  
+
 //   return (
 //     <div className="flex flex-col h-full">
 //       <CalendarHeader />
-      
+
 //       {/* <div className="flex-1 p-4 bg-white rounded-lg shadow overflow-hidden"> */}
 //       <div className="p-4 bg-white rounded-lg shadow overflow-hidden" style={{ height: '80vh' }}>
 
@@ -215,17 +209,16 @@
 //           )}
 //         />
 //       </div>
-      
+
 //       {isEventModalOpen && <EventModal />}
 //       {isTimeSwapModalOpen && <TimeSwapModal />}
 //     </div>
 //   );
 // }
 
-
 // import { useRef, useEffect, useState } from 'react';
 // import type { CalendarApi } from '@fullcalendar/core';
-// import FullCalendar from '@fullcalendar/react'; 
+// import FullCalendar from '@fullcalendar/react';
 // import dayGridPlugin from '@fullcalendar/daygrid';
 // import timeGridPlugin from '@fullcalendar/timegrid';
 // import interactionPlugin from '@fullcalendar/interaction';
@@ -236,7 +229,6 @@
 // import { mockUsers, currentUser } from '../../mocks/data';
 // import { CalendarEvent } from '../../types';
 // import { parseISO } from 'date-fns';
-
 
 // export default function Calendar() {
 //   const {
@@ -255,7 +247,6 @@
 
 //   const [filteredEvents, setFilteredEvents] = useState<CalendarEvent[]>(events);
 //   const calendarRef = useRef<FullCalendar | null>(null);
-
 
 //   // Apply filters to events
 //   useEffect(() => {
@@ -307,12 +298,6 @@
 //   return () => clearTimeout(timer);
 // }, []);
 
-
-
-
-
-
-
 //   // Handle date click to create new event
 //   // const handleDateClick = (info: any) => {
 //   //   const end = new Date(info.date);
@@ -362,8 +347,6 @@
 //     openEventModal(newEvent);
 //   };
 
-
-
 //   // Handle event click to edit
 //   // const handleEventClick = (info: any) => {
 //   //   const event = events.find(e => e.id === info.event.id);
@@ -386,7 +369,6 @@
 
 //     openEventModal(event);
 //   };
-
 
 //   // Handle event drop (drag & drop)
 //   const handleEventDrop = (info: any) => {
@@ -430,7 +412,6 @@
 //     <div className="flex flex-col h-full">
 //       <CalendarHeader calendarRef={calendarRef} />
 
-
 //       {/* <div className="flex-1 p-4 bg-white rounded-lg shadow overflow-hidden"> */}
 //       <div className="p-4 bg-white rounded-lg shadow overflow-hidden" style={{ height: '80vh' }}>
 
@@ -456,7 +437,6 @@
 //     setDate(dateInfo.start);
 //   }
 // }}
-
 
 //           eventTimeFormat={{
 //             hour: '2-digit',
@@ -485,18 +465,18 @@
 //   );
 // }
 // ✅ Updated Calendar.tsx - Enforce View-Only for Co-Parent & Today
-import { useRef, useEffect, useState } from 'react';
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction';
-import { useCalendarStore } from '../../store/useCalendarStore';
-import { useUserStore } from '../../store/useUserStore';
-import EventModal from './EventModal';
-import TimeSwapModal from './TimeSwapModal';
-import { CalendarEvent } from '../../types';
-import { format, parseISO, isSameDay } from 'date-fns';
-import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
-import EventList from './EventList';
+import { useRef, useEffect, useState } from "react";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import interactionPlugin from "@fullcalendar/interaction";
+import { useCalendarStore } from "../../store/useCalendarStore";
+import { useUserStore } from "../../store/useUserStore";
+import EventModal from "./EventModal";
+import TimeSwapModal from "./TimeSwapModal";
+import { CalendarEvent } from "../../types";
+import { format, parseISO, isSameDay } from "date-fns";
+import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import EventList from "./EventList";
 
 export default function Calendar() {
   const {
@@ -522,25 +502,26 @@ export default function Calendar() {
   const calendarRef = useRef<FullCalendar | null>(null);
 
   useEffect(() => {
-    const filtered = events.filter(event => {
+    const filtered = events.filter((event) => {
       const matchType =
-        filters.eventTypes.length === 0 || filters.eventTypes.includes(event.eventType);
+        filters.eventTypes.length === 0 ||
+        filters.eventTypes.includes(event.eventType);
       const matchUser =
         filters.users.length === 0 ||
         filters.users.includes(event.createdBy) ||
-        event.sharedWith.some(id => filters.users.includes(id));
+        event.sharedWith.some((id) => filters.users.includes(id));
       return matchType && matchUser;
     });
     setFilteredEvents(filtered);
   }, [events, filters]);
 
-  const selectedDateEvents = filteredEvents.filter(event =>
+  const selectedDateEvents = filteredEvents.filter((event) =>
     isSameDay(parseISO(event.start), selectedDate)
   );
 
   const handleDateClick = (info: any) => {
     const clickedDate = new Date(info.date);
-    const sameDayEvents = filteredEvents.filter(event =>
+    const sameDayEvents = filteredEvents.filter((event) =>
       isSameDay(parseISO(event.start), clickedDate)
     );
     setSelectedDate(clickedDate);
@@ -549,7 +530,7 @@ export default function Calendar() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (clickedDate < today) {
-      alert('You cannot create events in the past.');
+      alert("You cannot create events in the past.");
       return;
     }
     if (!user || !user.id) return;
@@ -558,41 +539,39 @@ export default function Calendar() {
     end.setHours(end.getHours() + 1);
 
     openEventModal({
-      id: '',
-      title: '',
-      description: '',
+      id: "",
+      title: "",
+      description: "",
       start: clickedDate.toISOString(),
       end: end.toISOString(),
       allDay: info.allDay,
-      eventType: 'OTHER',
+      eventType: "OTHER",
       createdBy: user.id,
       sharedWith: [],
-      color: user.color || '#888',
+      color: user.color || "#888",
     });
   };
 
-const handleEventClick = (info: any) => {
-  const event = events.find(e => e.id === info.event.id);
-  if (!event || !user?.id) return;
+  const handleEventClick = (info: any) => {
+    const event = events.find((e) => e.id === info.event.id);
+    if (!event || !user?.id) return;
 
-  const eventDate = parseISO(event.start);
-  const now = new Date();
+    const eventDate = parseISO(event.start);
+    const now = new Date();
 
-  const isToday = isSameDay(eventDate, now);
-  const isPast = eventDate < new Date(now.setHours(0, 0, 0, 0));
-  const isCoParent = event.createdBy !== user.id;
+    const isToday = isSameDay(eventDate, now);
+    const isPast = eventDate < new Date(now.setHours(0, 0, 0, 0));
+    const isCoParent = event.createdBy !== user.id;
 
-  const viewOnly = isCoParent || isToday || isPast;
+    const viewOnly = isCoParent || isToday || isPast;
 
-  setSelectedDate(eventDate);
-  openEventModal({ ...event, viewOnly });
-};
+    setSelectedDate(eventDate);
+    openEventModal({ ...event, viewOnly });
+  };
 
-
-
-  const handleMonthChange = (direction: 'prev' | 'next') => {
+  const handleMonthChange = (direction: "prev" | "next") => {
     const calendarApi = calendarRef.current?.getApi();
-    if (direction === 'prev') calendarApi?.prev();
+    if (direction === "prev") calendarApi?.prev();
     else calendarApi?.next();
     setDate(calendarApi?.getDate() ?? new Date());
   };
@@ -622,12 +601,20 @@ const handleEventClick = (info: any) => {
           <div className="col-span-1 space-y-6">
             <div className="bg-white rounded-2xl shadow p-4 lg:p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-gray-800">{format(date, 'MMMM yyyy')}</h2>
+                <h2 className="text-lg font-bold text-gray-800">
+                  {format(date, "MMMM yyyy")}
+                </h2>
                 <div className="flex space-x-2">
-                  <button onClick={() => handleMonthChange('prev')} className="text-gray-500 hover:text-indigo-600">
+                  <button
+                    onClick={() => handleMonthChange("prev")}
+                    className="text-gray-500 hover:text-indigo-600"
+                  >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  <button onClick={() => handleMonthChange('next')} className="text-gray-500 hover:text-indigo-600">
+                  <button
+                    onClick={() => handleMonthChange("next")}
+                    className="text-gray-500 hover:text-indigo-600"
+                  >
                     <ChevronRight className="w-5 h-5" />
                   </button>
                   <button
@@ -639,28 +626,28 @@ const handleEventClick = (info: any) => {
                 </div>
               </div>
 
-              <div className="rounded-2xl overflow-hidden shadow border border-slate-200">
+              <div className="rounded-2xl">
                 <FullCalendar
                   ref={calendarRef}
                   plugins={[dayGridPlugin, interactionPlugin]}
                   initialView="dayGridMonth"
                   headerToolbar={false}
-                  height={600}
+                  height={240}
                   contentHeight={600}
                   fixedWeekCount={false}
-                  events={filteredEvents.map(event => ({
+                  events={filteredEvents.map((event) => ({
                     ...event,
-                    display: 'background',
-                    backgroundColor: event.color || '#cfcfcf',
+                    display: "background",
+                    backgroundColor: event.color || "#cfcfcf",
                   }))}
                   selectable
                   dateClick={handleDateClick}
                   eventClick={handleEventClick}
                   initialDate={selectedDate}
                   dayCellClassNames={() =>
-                    'rounded-xl aspect-square border transition-all duration-150 hover:bg-indigo-50 cursor-pointer'
+                    "rounded-xl aspect-square border transition-all duration-150 hover:bg-indigo-50 cursor-pointer"
                   }
-                  dayHeaderClassNames={() => 'text-indigo-800 font-semibold'}
+                  dayHeaderClassNames={() => "text-indigo-800 font-semibold"}
                   eventDisplay="background"
                   eventContent={() => null}
                   dayMaxEventRows={0}
@@ -668,29 +655,42 @@ const handleEventClick = (info: any) => {
                 />
               </div>
             </div>
-                <div className="bg-white rounded-2xl shadow p-4 lg:p-6">
-            <h3 className="text-md font-semibold text-gray-800 mb-3">Filters</h3>
-            <div className="mb-4">
-              <h4 className="text-sm text-gray-700 font-medium mb-1">Event Types</h4>
-              {['VACATION', 'MEDICAL', 'SCHOOL', 'EXCHANGE', 'OTHER'].map(type => (
-                <div key={type} className="flex items-center space-x-2 mb-2">
-                  <input
-                    type="checkbox"
-                    checked={filters.eventTypes.includes(type)}
-                    onChange={() => {
-                      const current = [...filters.eventTypes];
-                      const index = current.indexOf(type);
-                      index >= 0 ? current.splice(index, 1) : current.push(type);
-                      useCalendarStore.getState().setFilters({ eventTypes: current });
-                    }}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <span className="text-sm text-gray-700">{type}</span>
-                </div>
-              ))}
-            </div>
+            <div className="bg-white rounded-2xl shadow p-4 lg:p-6">
+              <h3 className="text-md font-semibold text-gray-800 mb-3">
+                Filters
+              </h3>
+              <div className="mb-4">
+                <h4 className="text-sm text-gray-700 font-medium mb-3">
+                  Event Types
+                </h4>
+                {["VACATION", "MEDICAL", "SCHOOL", "EXCHANGE", "OTHER"].map(
+                  (type) => (
+                    <div
+                      key={type}
+                      className="flex items-center space-x-2 mb-2"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={filters.eventTypes.includes(type)}
+                        onChange={() => {
+                          const current = [...filters.eventTypes];
+                          const index = current.indexOf(type);
+                          index >= 0
+                            ? current.splice(index, 1)
+                            : current.push(type);
+                          useCalendarStore
+                            .getState()
+                            .setFilters({ eventTypes: current });
+                        }}
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="text-sm text-gray-700">{type}</span>
+                    </div>
+                  )
+                )}
+              </div>
 
-            {/* <div>
+              {/* <div>
               <h4 className="text-sm text-gray-700 font-medium mb-1">Family Members</h4>
               {mockUsers.map(user => (
                 <div key={user.id} className="flex items-center space-x-2 mb-2">
@@ -710,27 +710,46 @@ const handleEventClick = (info: any) => {
                 </div>
               ))}
             </div> */}
-          </div>
+            </div>
           </div>
 
           <div className="col-span-1 lg:col-span-2 bg-white rounded-2xl shadow p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
-                <button onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() - 1)))}>
+                <button
+                  onClick={() =>
+                    setSelectedDate(
+                      new Date(selectedDate.setDate(selectedDate.getDate() - 1))
+                    )
+                  }
+                >
                   <ChevronLeft className="w-5 h-5 text-gray-500 hover:text-gray-700" />
                 </button>
                 <h2 className="text-xl font-semibold text-gray-900">
-                  {format(selectedDate, 'MMMM d, yyyy')}
+                  {format(selectedDate, "MMMM d, yyyy")}
                 </h2>
-                <button onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() + 1)))}>
+                <button
+                  onClick={() =>
+                    setSelectedDate(
+                      new Date(selectedDate.setDate(selectedDate.getDate() + 1))
+                    )
+                  }
+                >
                   <ChevronRight className="w-5 h-5 text-gray-500 hover:text-gray-700" />
                 </button>
               </div>
-              <button onClick={() => setSelectedDate(new Date())} className="text-sm text-indigo-600 hover:underline">
+              <button
+                onClick={() => setSelectedDate(new Date())}
+                className="text-sm text-indigo-600 hover:underline"
+              >
                 Today
               </button>
             </div>
-            <EventList events={selectedDateEvents} onEventClick={handleEventClick} currentUserId={user?.id || ''} />
+            <EventList
+              events={selectedDateEvents}
+              onEventClick={handleEventClick}
+              currentUserId={user?.id || ""}
+            />
           </div>
         </div>
         {isEventModalOpen && <EventModal />}
