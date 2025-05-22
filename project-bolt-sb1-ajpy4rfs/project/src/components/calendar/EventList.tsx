@@ -39,30 +39,35 @@ export default function EventList({ events, onEventClick, currentUserId }: Event
                                 <p className="text-sm text-gray-600 mt-1">{event.description}</p>
                             )}
 
-                            {event.createdBy !== currentUserId && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
+                           {event.createdBy === currentUserId && (
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
 
-                                        useCalendarStore.getState().setSelectedTimeSwapRequest({
-                                            id: '', // temporary placeholder
-                                            eventId: event.id,
-                                            requestedBy: currentUserId,
-                                            requestedTo: event.createdBy,
-                                            proposedStart: event.start,
-                                            proposedEnd: event.end,
-                                            reason: '',
-                                            status: 'pending',
-                                            createdAt: new Date().toISOString()
-                                        });
+      const newRequestId = 'swap-' + Date.now(); // generate temp ID
 
-                                        useCalendarStore.getState().openTimeSwapModal();
-                                    }}
-                                    className="mt-2 text-sm text-indigo-600 hover:underline"
-                                >
-                                    Request Time Swap
-                                </button>
-                            )}
+      const swapRequest: TimeSwapRequest = {
+        id: newRequestId,
+        eventId: event.id,
+        requestedBy: currentUserId,
+        requestedTo: event.sharedWith[0] || '',
+        proposedStart: event.start,
+        proposedEnd: event.end,
+        reason: '',
+        response: '',
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      };
+
+      useCalendarStore.getState().openTimeSwapModal(swapRequest); // ✅ Only this
+    }}
+    className="mt-2 text-sm text-indigo-600 hover:underline"
+  >
+    Request Time Swap
+  </button>
+)}
+
+
 
 
                         </div>

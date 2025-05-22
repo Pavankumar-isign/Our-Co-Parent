@@ -484,7 +484,7 @@
 //     </div>
 //   );
 // }
-
+// ✅ Updated Calendar.tsx - Enforce View-Only for Co-Parent & Today
 import { useRef, useEffect, useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -497,7 +497,6 @@ import { CalendarEvent } from '../../types';
 import { format, parseISO, isSameDay } from 'date-fns';
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import EventList from './EventList';
-import { mockUsers } from '../../mocks/data';
 
 export default function Calendar() {
   const {
@@ -509,22 +508,18 @@ export default function Calendar() {
     isTimeSwapModalOpen,
     openEventModal,
     updateEvent,
-    
     canCreateEvent,
   } = useCalendarStore();
 
   const { user, coParent, children, fetchUserFamily } = useUserStore();
 
   useEffect(() => {
-    if (!user) {
-      fetchUserFamily?.();
-    }
+    if (!user) fetchUserFamily?.();
   }, []);
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [filteredEvents, setFilteredEvents] = useState<CalendarEvent[]>(events);
   const calendarRef = useRef<FullCalendar | null>(null);
-  
 
   useEffect(() => {
     const filtered = events.filter(event => {
@@ -576,12 +571,24 @@ export default function Calendar() {
     });
   };
 
-  const handleEventClick = (info: any) => {
-    const event = events.find(e => e.id === info.event.id);
-    if (!event) return;
-    setSelectedDate(new Date(event.start));
-    openEventModal(event);
-  };
+const handleEventClick = (info: any) => {
+  const event = events.find(e => e.id === info.event.id);
+  if (!event || !user?.id) return;
+
+  const eventDate = parseISO(event.start);
+  const now = new Date();
+
+  const isToday = isSameDay(eventDate, now);
+  const isPast = eventDate < new Date(now.setHours(0, 0, 0, 0));
+  const isCoParent = event.createdBy !== user.id;
+
+  const viewOnly = isCoParent || isToday || isPast;
+
+  setSelectedDate(eventDate);
+  openEventModal({ ...event, viewOnly });
+};
+
+
 
   const handleMonthChange = (direction: 'prev' | 'next') => {
     const calendarApi = calendarRef.current?.getApi();
@@ -591,83 +598,77 @@ export default function Calendar() {
   };
 
   return (
-      <>
-    <style>{`
- .fc .fc-daygrid-day {
-  width: calc(100% / 7);
-  aspect-ratio: 1 / 1;        
-  padding: 0;                 
-}
+    <>
+      <style>{`
+        .fc .fc-daygrid-day {
+          width: calc(100% / 7);
+          aspect-ratio: 1 / 1;
+          padding: 0;
+        }
+        .fc .fc-daygrid-day-frame {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .fc .fc-daygrid-day-top {
+          padding: 0.25rem;
+        }
+      `}</style>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white py-6 px-4 sm:px-8">
+        <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="col-span-1 space-y-6">
+            <div className="bg-white rounded-2xl shadow p-4 lg:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-gray-800">{format(date, 'MMMM yyyy')}</h2>
+                <div className="flex space-x-2">
+                  <button onClick={() => handleMonthChange('prev')} className="text-gray-500 hover:text-indigo-600">
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button onClick={() => handleMonthChange('next')} className="text-gray-500 hover:text-indigo-600">
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => canCreateEvent() && openEventModal()}
+                    className="inline-flex items-center text-sm px-3 py-1.5 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
+                  >
+                    <Plus className="w-4 h-4 mr-1" /> Add
+                  </button>
+                </div>
+              </div>
 
-.fc .fc-daygrid-day-frame {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;               
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.fc .fc-daygrid-day-top {
-  padding: 0.25rem;
-}
-
-    `}</style>
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white py-6 px-4 sm:px-8">
-      <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="col-span-1 space-y-6">
-          <div className="bg-white rounded-2xl shadow p-4 lg:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-800">
-                {format(date, 'MMMM yyyy')}
-              </h2>
-              <div className="flex space-x-2">
-                <button onClick={() => handleMonthChange('prev')} className="text-gray-500 hover:text-indigo-600">
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button onClick={() => handleMonthChange('next')} className="text-gray-500 hover:text-indigo-600">
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => canCreateEvent() && openEventModal()}
-                  className="inline-flex items-center text-sm px-3 py-1.5 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
-                >
-                  <Plus className="w-4 h-4 mr-1" /> Add
-                </button>
+              <div className="rounded-2xl overflow-hidden shadow border border-slate-200">
+                <FullCalendar
+                  ref={calendarRef}
+                  plugins={[dayGridPlugin, interactionPlugin]}
+                  initialView="dayGridMonth"
+                  headerToolbar={false}
+                  height={600}
+                  contentHeight={600}
+                  fixedWeekCount={false}
+                  events={filteredEvents.map(event => ({
+                    ...event,
+                    display: 'background',
+                    backgroundColor: event.color || '#cfcfcf',
+                  }))}
+                  selectable
+                  dateClick={handleDateClick}
+                  eventClick={handleEventClick}
+                  initialDate={selectedDate}
+                  dayCellClassNames={() =>
+                    'rounded-xl aspect-square border transition-all duration-150 hover:bg-indigo-50 cursor-pointer'
+                  }
+                  dayHeaderClassNames={() => 'text-indigo-800 font-semibold'}
+                  eventDisplay="background"
+                  eventContent={() => null}
+                  dayMaxEventRows={0}
+                  showNonCurrentDates={true}
+                />
               </div>
             </div>
-
-            {/* ✅ Rounded corners and square layout applied below */}
-            <div className="rounded-2xl overflow-hidden shadow border border-slate-200">
-              <FullCalendar
-                ref={calendarRef}
-                plugins={[dayGridPlugin, interactionPlugin]}
-                initialView="dayGridMonth"
-                headerToolbar={false}
-                height={600}
-                contentHeight={600}
-                fixedWeekCount={false}
-                events={filteredEvents.map(event => ({
-                  ...event,
-                  display: 'background',
-                  backgroundColor: event.color || '#cfcfcf',
-                }))}
-                selectable
-                dateClick={handleDateClick}
-                eventClick={handleEventClick}
-                initialDate={selectedDate}
-                dayCellClassNames={() =>
-                  'rounded-xl aspect-square border transition-all duration-150 hover:bg-indigo-50 cursor-pointer'
-                }
-                dayHeaderClassNames={() => 'text-indigo-800 font-semibold'}
-                eventDisplay="background"
-                eventContent={() => null}
-                dayMaxEventRows={0}
-                showNonCurrentDates={true}
-              />
-            </div>
-          </div>
-           <div className="bg-white rounded-2xl shadow p-4 lg:p-6">
+                <div className="bg-white rounded-2xl shadow p-4 lg:p-6">
             <h3 className="text-md font-semibold text-gray-800 mb-3">Filters</h3>
             <div className="mb-4">
               <h4 className="text-sm text-gray-700 font-medium mb-1">Event Types</h4>
@@ -710,42 +711,31 @@ export default function Calendar() {
               ))}
             </div> */}
           </div>
-        </div>
+          </div>
 
-        <div className="col-span-1 lg:col-span-2 bg-white rounded-2xl shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <button onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() - 1)))}>
-                <ChevronLeft className="w-5 h-5 text-gray-500 hover:text-gray-700" />
-              </button>
-              <h2 className="text-xl font-semibold text-gray-900">
-                {format(selectedDate, 'MMMM d, yyyy')}
-              </h2>
-              <button onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() + 1)))}>
-                <ChevronRight className="w-5 h-5 text-gray-500 hover:text-gray-700" />
+          <div className="col-span-1 lg:col-span-2 bg-white rounded-2xl shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <button onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() - 1)))}>
+                  <ChevronLeft className="w-5 h-5 text-gray-500 hover:text-gray-700" />
+                </button>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {format(selectedDate, 'MMMM d, yyyy')}
+                </h2>
+                <button onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() + 1)))}>
+                  <ChevronRight className="w-5 h-5 text-gray-500 hover:text-gray-700" />
+                </button>
+              </div>
+              <button onClick={() => setSelectedDate(new Date())} className="text-sm text-indigo-600 hover:underline">
+                Today
               </button>
             </div>
-            <button
-              onClick={() => setSelectedDate(new Date())}
-              className="text-sm text-indigo-600 hover:underline"
-            >
-              Today
-            </button>
+            <EventList events={selectedDateEvents} onEventClick={handleEventClick} currentUserId={user?.id || ''} />
           </div>
-<EventList
-  events={selectedDateEvents}
-  onEventClick={handleEventClick}
-  currentUserId={user?.id || ''}
-/>
-
-
-
         </div>
+        {isEventModalOpen && <EventModal />}
+        {isTimeSwapModalOpen && <TimeSwapModal />}
       </div>
-      {isEventModalOpen && <EventModal />}
-      {isTimeSwapModalOpen && <TimeSwapModal />}
-    </div>
-      </>
-
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { TimeSwapRequest } from '../types';
 
 const api = axios.create({
   baseURL: '/api',
@@ -28,6 +29,19 @@ api.interceptors.response.use(
   }
 );
 
+export const timeSwapApi = {
+  updateRequest: async (requestId: string, data: Partial<TimeSwapRequest>) => {
+    const response = await api.patch(`http://localhost:8080/api/calendar/time-swaps/${requestId}`, data);
+    return response.data;
+  },
+
+  createRequest: async (request: Omit<TimeSwapRequest, 'id' | 'status' | 'createdAt'>) => {
+    const response = await api.post('http://localhost:8080/api/calendar/time-swaps', request);
+    return response.data;
+  }
+};
+
+
 export const eventApi = {
   getEvents: async (start: string, end: string) => {
     const response = await api.get('http://localhost:8080/api/calendar/events', {
@@ -46,6 +60,7 @@ export const eventApi = {
     const response = await api.put(`http://localhost:8080/api/calendar/events/${eventId}`, event);
     return response.data;
   },
+
 
   deleteEvent: async (eventId: string) => {
     await api.delete(`http://localhost:8080/api/calendar/events/${eventId}`);

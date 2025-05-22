@@ -6,7 +6,8 @@ import { X, Calendar, Clock, MessageSquare, Check, X as XIcon } from 'lucide-rea
 import { useCalendarStore } from '../../store/useCalendarStore';
 import { mockUsers, currentUser } from '../../mocks/data';
 import { format, parseISO, isAfter } from 'date-fns';
-
+import { useUserStore } from '../../store/useUserStore';
+import { timeSwapApi } from '../../services/api';
 const swapSchema = z.object({
   proposedStart: z.string(),
   proposedEnd: z.string(),
@@ -32,7 +33,8 @@ export default function TimeSwapModal() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const isViewMode = selectedTimeSwapRequest?.id;
+ const isViewMode = !!selectedTimeSwapRequest?.id && selectedTimeSwapRequest?.status !== 'pending';
+
   const canRespond = isViewMode &&
     selectedTimeSwapRequest.status === 'pending' &&
     selectedTimeSwapRequest.requestedTo === currentUser.id;
@@ -70,11 +72,26 @@ export default function TimeSwapModal() {
     }
   };
 
-  const onSubmit = (data: SwapFormData) => {
-    if (!event) return;
+ const onSubmit = async (data: SwapFormData) => {
+  if (!event) return;
 
-    setIsSubmitting(true);
+  setIsSubmitting(true);
 
+  try {
+    // 1. API call to backend
+await timeSwapApi.createRequest({
+  eventId: event.id,
+  requestedBy: currentUser.id,
+  requestedTo: event.createdBy === currentUser.id
+    ? event.sharedWith[0]
+    : event.createdBy,
+  proposedStart: data.proposedStart,
+  proposedEnd: data.proposedEnd,
+  reason: data.reason
+});
+
+
+    // 2. Local store update
     createTimeSwapRequest({
       eventId: event.id,
       requestedBy: currentUser.id,
@@ -83,12 +100,18 @@ export default function TimeSwapModal() {
         : event.createdBy,
       proposedStart: data.proposedStart,
       proposedEnd: data.proposedEnd,
-      reason: data.reason
+      reason: data.reason,
     });
 
-    setIsSubmitting(false);
     closeTimeSwapModal();
-  };
+  } catch (error) {
+    console.error("❌ Failed to create swap request via API", error);
+    alert("Failed to submit time swap request. Please try again.");
+  }
+
+  setIsSubmitting(false);
+};
+
 
   const toLocalDateTimeInputValue = (dateStr: string) => {
     if (!dateStr) return '';
@@ -98,44 +121,70 @@ export default function TimeSwapModal() {
     const localDate = new Date(date.getTime() - offset * 60 * 1000);
     return localDate.toISOString().slice(0, 16);
   };
+ 
 
-  const handleApprove = (data: SwapFormData) => {
-    if (!selectedTimeSwapRequest) return;
+const handleApprove = async (data: SwapFormData) => {
+  if (!selectedTimeSwapRequest) return;
 
-    setIsSubmitting(true);
+  setIsSubmitting(true);
+
+  try {
+    await timeSwapApi.updateRequest(selectedTimeSwapRequest.id, {
+      status: 'approved',
+      response: data.response
+    });
+
     updateTimeSwapRequest(selectedTimeSwapRequest.id, {
       status: 'approved',
       response: data.response
     });
 
     if (event) {
-      const updatedEvent = {
+      await useCalendarStore.getState().updateEvent(event.id, {
         start: selectedTimeSwapRequest.proposedStart,
         end: selectedTimeSwapRequest.proposedEnd
-      };
-      useCalendarStore.getState().updateEvent(event.id, updatedEvent);
+      });
     }
+  } catch (error) {
+    console.error('❌ Failed to update swap request via API', error);
+  }
 
-    setIsSubmitting(false);
-    closeTimeSwapModal();
-  };
+  setIsSubmitting(false);
+  closeTimeSwapModal();
+};
 
-  const handleReject = (data: SwapFormData) => {
-    if (!selectedTimeSwapRequest) return;
+const handleReject = async (data: SwapFormData) => {
+  if (!selectedTimeSwapRequest) return;
 
-    setIsSubmitting(true);
+  setIsSubmitting(true);
+
+  try {
+    await timeSwapApi.updateRequest(selectedTimeSwapRequest.id, {
+      status: 'rejected',
+      response: data.response
+    });
+
     updateTimeSwapRequest(selectedTimeSwapRequest.id, {
       status: 'rejected',
       response: data.response
     });
-    setIsSubmitting(false);
-    closeTimeSwapModal();
-  };
+  } catch (error) {
+    console.error('❌ Failed to reject swap via API', error);
+  }
 
-  const getUserName = (userId: string) => {
-    const user = mockUsers.find(u => u.id === userId);
-    return user ? user.name : 'Unknown User';
-  };
+  setIsSubmitting(false);
+  closeTimeSwapModal();
+};
+
+
+const getUserName = (userId: string) => {
+  const { user, coParent } = useUserStore.getState(); // ✅ Use real user data
+
+  if (user?.id === userId) return user.name;
+  if (coParent?.id === userId) return coParent.name;
+
+  return 'Unknown User'; // fallback if unmatched
+};
 
   if (!selectedTimeSwapRequest) {
     console.warn('⛔ TimeSwapModal: No selectedTimeSwapRequest yet. Waiting...');
@@ -184,10 +233,12 @@ export default function TimeSwapModal() {
                 render={({ field }) => (
                   <input
                     type="datetime-local"
-                    value={toLocalDateTimeInputValue(field.value)}
+                   value={field.value ? toLocalDateTimeInputValue(field.value) : ''}
+
+
                     onChange={(e) => field.onChange(new Date(e.target.value).toISOString())}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={isViewMode}
+                     
                   />
                 )}
               />
@@ -208,10 +259,12 @@ export default function TimeSwapModal() {
                 render={({ field }) => (
                   <input
                     type="datetime-local"
-                    value={toLocalDateTimeInputValue(field.value)}
+                  value={field.value ? toLocalDateTimeInputValue(field.value) : ''}
+
+
                     onChange={(e) => field.onChange(new Date(e.target.value).toISOString())}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={isViewMode}
+                     
                   />
                 )}
               />
@@ -235,7 +288,7 @@ export default function TimeSwapModal() {
                   rows={3}
                   className={`w-full px-3 py-2 border ${errors.reason ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   placeholder="Why do you need to swap times?"
-                  disabled={isViewMode}
+                   
                 />
               )}
             />

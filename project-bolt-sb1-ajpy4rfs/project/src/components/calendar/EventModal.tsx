@@ -49,6 +49,8 @@ export default function EventModal() {
     canCreateEvent
   } = useCalendarStore();
 
+ const isViewOnly = selectedEvent?.viewOnly === true;
+
   const isEditMode = !!selectedEvent?.id;
   const isPastEvent = new Date(selectedEvent?.start || '') < new Date();
 
@@ -74,7 +76,7 @@ export default function EventModal() {
         : undefined
     }
   });
-  
+
   useEffect(() => {
     reset(getDefaultValues(selectedEvent));
   }, [selectedEvent]);
@@ -246,7 +248,7 @@ export default function EventModal() {
         </div>
 
         {/* Form */}
-      <form key={selectedEvent?.id || 'new'} onSubmit={handleSubmit(onSubmit)} className="overflow-y-auto p-4">
+        <form key={selectedEvent?.id || 'new'} onSubmit={handleSubmit(onSubmit)} className="overflow-y-auto p-4">
 
           {/* Conflict Warning */}
           {showConflicts && (
@@ -560,40 +562,43 @@ export default function EventModal() {
         </form>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 flex justify-between">
-          {isEditMode ? (
-            isPastEvent ? (
-              <div /> // past event: show nothing or static label
-            ) : (
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
-              >
-                Delete Event
-              </button>
-            )
-          ) : (
-            <div /> // not edit mode: show nothing
-          )}
+{/* Footer */}
+<div className="p-4 border-t border-gray-200 flex justify-between">
+  {isViewOnly ? (
+    <div className="text-gray-500 text-sm italic">View-only mode</div>
+  ) : (
+    <>
+      {isEditMode && (
+        <button
+          type="button"
+          onClick={handleDelete}
+          className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
+        >
+          Delete Event
+        </button>
+      )}
 
-          <div className="flex space-x-2">
-            <button
-              type="button"
-              onClick={closeEventModal}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit(onSubmit)}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
-            >
-              {isEditMode ? 'Update Event' : 'Save Event'}
-            </button>
-          </div>
-        </div>
+      <div className="flex space-x-2">
+        <button
+          type="button"
+          onClick={closeEventModal}
+          className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleSubmit(onSubmit)}
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+        >
+          {isEditMode ? 'Update Event' : 'Save Event'}
+        </button>
+      </div>
+    </>
+  )}
+</div>
+
+
       </div>
       {showCoParentModal && (
         <CoParentSetupModal onClose={() => setShowCoParentModal(false)} />

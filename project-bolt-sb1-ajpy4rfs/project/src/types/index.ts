@@ -34,6 +34,7 @@ export interface CalendarEvent {
   };
   attachments?: string[]; // array of file URLs
   comments?: Comment[];
+   viewOnly?: boolean;
 }
 
 export interface Comment {
